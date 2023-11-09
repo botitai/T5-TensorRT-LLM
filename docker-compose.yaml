@@ -30,21 +30,28 @@ services:
 
   download:
     image: tensorrt_llm:trt-llm-backend
-    working_dir: /app/tensorrt_llm/examples/enc_dec
+    working_dir: /app/tensorrt_llm/examples/flan_t5
     volumes:
       - type: bind
-        source: TensorRT-LLM/examples/enc_dec/
-        target: /app/tensorrt_llm/examples/enc_dec/
+        source: TensorRT-LLM/examples/flan_t5/
+        target: /app/tensorrt_llm/examples/flan_t5/
+    env_file:
+      - .env
     entrypoint: ["python3", "download.py"]
 
   build:
     image: tensorrt_llm:trt-llm-backend
-    working_dir: /app/tensorrt_llm/examples/enc_dec
+    working_dir: /app/tensorrt_llm/examples/flan_t5
     runtime: nvidia
     volumes:
       - type: bind
-        source: TensorRT-LLM/examples/enc_dec/
-        target: /app/tensorrt_llm/examples/enc_dec/
+        source: TensorRT-LLM/examples/flan_t5/
+        target: /app/tensorrt_llm/examples/flan_t5/
+      - type: bind
+        source: TensorRT-LLM/tensorrt_llm/models/
+        target: /usr/local/lib/python3.10/dist-packages/tensorrt_llm/models/
+    env_file:
+      - .env
     entrypoint:
       [
         "python3",
@@ -53,14 +60,17 @@ services:
         "--use_bert_attention_plugin",
         "--use_gpt_attention_plugin",
         "--dtype=float16",
-        "--max_beam_width=3",
+        "--max_beam_width=1",
+        "--max_input_len=1024",
+        "--output_dir=${ENGINE_DIR}",
+        "--dtype=float32"
       ]
 
   triton-server:
     image: tensorrt_llm:triton-backend
     runtime: nvidia
     environment:
-      - PYTHONPATH=/models/t5/1
+      - PYTHONPATH=/models/flan_t5/1
     ports:
       - 8000:8000
       - 8001:8001
@@ -72,13 +82,13 @@ services:
         source: cache
         target: ${TRANSFORMERS_CACHE}
       - type: bind
-        source: TensorRT-LLM/examples/enc_dec/trt_engines
+        source: TensorRT-LLM/examples/flan_t5/${ENGINE_DIR}
         target: /trt_engines
       - type: bind
         source: models
         target: /models
     entrypoint:
-      ["tritonserver", "--model-repository=/models", "--log-verbose=0"]
+      ["tritonserver", "--model-repository=/models", "--log-verbose=1"]
 
   triton-client:
     build:
