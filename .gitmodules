@@ -1,4 +1,3 @@
 [submodule "TensorRT-LLM"]
 	path = TensorRT-LLM
 	url = https://github.com/NVIDIA/TensorRT-LLM.git
-	branch = support_for_flan_t5
