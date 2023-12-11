@@ -71,30 +71,15 @@ services:
     entrypoint:
       ["tritonserver", "--model-repository=/models", "--log-verbose=1"]
 
-  triton-client:
-    build:
-      context: docker
-      target: devel
-      args:
-        - BASE_IMAGE_TAG=nvcr.io/nvidia/tritonserver:23.10-py3-sdk
-    image: tensorrt_llm:triton-trt-llm-client
-    ports:
-      - 8888:8888
-    env_file:
-      - .env
-    working_dir: /workspace
+  trt-llm-environment:
+    image: us-central1-docker.pkg.dev/got-it-ai/got-it-ai/tensorrt_llm:v0.6.1
+    runtime: nvidia
     volumes:
       - type: bind
-        source: workspace
-        target: /workspace
-    entrypoint:
-      [
-        "jupyter",
-        "lab",
-        "--ServerApp.ip=0.0.0.0",
-        "--ServerApp.port=8888",
-        "--ServerApp.allow_root=True",
-        "--ServerApp.token=''",
-        "--ServerApp.password=''",
-        "--no-browser",
-      ]
+        source: TensorRT-LLM/examples/enc_dec
+        target: /workdir
+      - type: bind
+        source: TensorRT-LLM/tensorrt_llm/models/
+        target: /usr/local/lib/python3.10/dist-packages/tensorrt_llm/models/
+    entrypoint: ["bash", "-c", "while true; do sleep 1; done"]
+  
